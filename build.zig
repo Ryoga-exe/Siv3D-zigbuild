@@ -6,15 +6,76 @@ const app_version = std.SemanticVersion{
     .minor = 1,
     .patch = 0,
 };
+const minimum_macos_version = std.SemanticVersion{
+    .major = 13,
+    .minor = 0,
+    .patch = 0,
+};
 const bundle_identifier = "com.github.ryoga-exe.siv3d-zigbuild";
 const bundle_path = app_name ++ ".app/Contents";
+
+const cpp_sources = [_][]const u8{
+    "src/Main.cpp",
+};
+
+const cxx_flags = [_][]const u8{
+    "-std=c++23",
+};
+
+const siv3d_libraries = [_][]const u8{
+    "libSiv3D.a",
+    "boost/libboost_filesystem.a",
+    "freetype/libfreetype.a",
+    "harfbuzz/libharfbuzz.a",
+    "libgif/liblibgif.a",
+    "libjpeg-turbo/libturbojpeg.a",
+    "libogg/libogg.a",
+    "libpng/libpng16.a",
+    "libtiff/libtiff.a",
+    "libvorbis/libvorbis.a",
+    "libvorbis/libvorbisenc.a",
+    "libvorbis/libvorbisfile.a",
+    "libwebp/libwebp.a",
+    "opencv/libopencv_core.a",
+    "opencv/libopencv_imgcodecs.a",
+    "opencv/libopencv_imgproc.a",
+    "opencv/libopencv_objdetect.a",
+    "opencv/libopencv_photo.a",
+    "opencv/libopencv_videoio.a",
+    "opus/libopus.a",
+    "opus/libopusfile.a",
+    "zlib/libzlib.a",
+};
+
+const system_libraries = [_][]const u8{
+    "curl",
+    "objc",
+};
+
+const system_frameworks = [_][]const u8{
+    "AVFoundation",
+    "AppKit",
+    "AudioToolbox",
+    "CFNetwork",
+    "CoreFoundation",
+    "CoreGraphics",
+    "CoreMedia",
+    "CoreServices",
+    "CoreText",
+    "CoreVideo",
+    "Foundation",
+    "IOKit",
+    "Metal",
+    "OpenGL",
+    "QuartzCore",
+};
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{
         .default_target = .{
             .cpu_arch = .x86_64,
             .os_tag = .macos,
-            .os_version_min = .{ .semver = .{ .major = 13, .minor = 0, .patch = 0 } },
+            .os_version_min = .{ .semver = minimum_macos_version },
         },
     });
     const optimize = b.standardOptimizeOption(.{});
@@ -38,8 +99,8 @@ pub fn build(b: *std.Build) void {
         .link_libcpp = true,
     });
     root_module.addCSourceFiles(.{
-        .files = &.{"src/Main.cpp"},
-        .flags = &.{"-std=c++23"},
+        .files = &cpp_sources,
+        .flags = &cxx_flags,
         .language = .cpp,
     });
     root_module.addSystemIncludePath(siv3d_sdk.path("include"));
@@ -48,58 +109,20 @@ pub fn build(b: *std.Build) void {
     root_module.addLibraryPath(.{ .cwd_relative = "/usr/lib" });
     root_module.addFrameworkPath(macos_sdk_root.path(b, "System/Library/Frameworks"));
 
-    inline for (.{
-        "libSiv3D.a",
-        "boost/libboost_filesystem.a",
-        "freetype/libfreetype.a",
-        "harfbuzz/libharfbuzz.a",
-        "libgif/liblibgif.a",
-        "libjpeg-turbo/libturbojpeg.a",
-        "libogg/libogg.a",
-        "libpng/libpng16.a",
-        "libtiff/libtiff.a",
-        "libvorbis/libvorbis.a",
-        "libvorbis/libvorbisenc.a",
-        "libvorbis/libvorbisfile.a",
-        "libwebp/libwebp.a",
-        "opencv/libopencv_core.a",
-        "opencv/libopencv_imgcodecs.a",
-        "opencv/libopencv_imgproc.a",
-        "opencv/libopencv_objdetect.a",
-        "opencv/libopencv_photo.a",
-        "opencv/libopencv_videoio.a",
-        "opus/libopus.a",
-        "opus/libopusfile.a",
-        "zlib/libzlib.a",
-    }) |library| {
+    inline for (siv3d_libraries) |library| {
         root_module.addObjectFile(siv3d_sdk.path(b.fmt("lib/macOS/{s}", .{library})));
     }
-
-    root_module.linkSystemLibrary("curl", .{});
-    root_module.linkSystemLibrary("objc", .{});
-    inline for (.{
-        "AVFoundation",
-        "AppKit",
-        "AudioToolbox",
-        "CFNetwork",
-        "CoreFoundation",
-        "CoreGraphics",
-        "CoreMedia",
-        "CoreServices",
-        "CoreText",
-        "CoreVideo",
-        "Foundation",
-        "IOKit",
-        "Metal",
-        "OpenGL",
-        "QuartzCore",
-    }) |framework| {
+    inline for (system_libraries) |library| {
+        root_module.linkSystemLibrary(library, .{});
+    }
+    inline for (system_frameworks) |framework| {
         root_module.linkFramework(framework, .{});
     }
 
     const executable = b.addExecutable(.{
         .name = app_name,
         .root_module = root_module,
+        .version = app_version,
     });
 
     const install_executable = b.addInstallArtifact(executable, .{
@@ -153,11 +176,11 @@ fn makeInfoPlist(b: *std.Build) []const u8 {
         \\    <key>CFBundleVersion</key>
         \\    <string>1</string>
         \\    <key>LSMinimumSystemVersion</key>
-        \\    <string>13.0</string>
+        \\    <string>{f}</string>
         \\    <key>NSHighResolutionCapable</key>
         \\    <true/>
         \\</dict>
         \\</plist>
         \\
-    , .{ app_name, bundle_identifier, app_name, app_version });
+    , .{ app_name, bundle_identifier, app_name, app_version, minimum_macos_version });
 }
