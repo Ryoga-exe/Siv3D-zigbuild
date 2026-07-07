@@ -1,0 +1,19 @@
+.{
+    .name = .siv3d_zigbuild,
+    .version = "0.1.0",
+    .fingerprint = 0x8c06a2013bcb3912,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .siv3d_macos = .{
+            .url = "https://siv3d.jp/downloads/Siv3D/siv3d_v0.6.16_macOS.zip",
+            .hash = "N-V-__8AAEmkFCdjyLpqLPvAlsMRYUudKMbxncjEhW5Uvexn",
+            .lazy = true,
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+    },
+}
