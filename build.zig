@@ -1,11 +1,9 @@
 const std = @import("std");
 
 const app_name = "Siv3DTest";
-const app_version = std.SemanticVersion{
-    .major = 0,
-    .minor = 1,
-    .patch = 0,
-};
+const app_zon_version = @import("build.zig.zon").version;
+const app_version = std.SemanticVersion.parse(app_zon_version) catch
+    @compileError("build.zig.zon .version must be a valid semantic version");
 const minimum_macos_version = std.SemanticVersion{
     .major = 13,
     .minor = 0,
