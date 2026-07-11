@@ -9,6 +9,16 @@
             .hash = "N-V-__8AAEmkFCdjyLpqLPvAlsMRYUudKMbxncjEhW5Uvexn",
             .lazy = true,
         },
+        .siv3d_windows_sdk = .{
+            .url = "https://siv3d.jp/downloads/Siv3D/manual/0.6.16/OpenSiv3D_SDK_0.6.16.zip",
+            .hash = "N-V-__8AAJ2ojyQIIMr70L0Rv8qwHcPB53x3pX97klcVb_nm",
+            .lazy = true,
+        },
+        .siv3d_windows_runtime = .{
+            .url = "https://siv3d.jp/downloads/Siv3D/manual/0.6.16/OpenSiv3D_0.6.16.zip",
+            .hash = "N-V-__8AAJT2uwQjQDdJR7b1Mop6RfPki10opnRSKwXl8_wC",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
