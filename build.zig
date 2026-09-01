@@ -348,6 +348,7 @@ fn buildWindows(
 fn makeWindowsResourceScript(b: *std.Build, runtime_app: std.Build.LazyPath) []const u8 {
     const runtime_app_path = runtime_app.getPath(b);
     var buffer = std.array_list.Managed(u8).init(b.allocator);
+    buffer.appendSlice("#include <Siv3D/Windows/Resource.hpp>\n\n") catch @panic("OOM");
     for (windows_resource_dirs) |resource_dir| {
         appendWindowsResourceDir(b, &buffer, runtime_app_path, resource_dir);
     }
@@ -356,7 +357,7 @@ fn makeWindowsResourceScript(b: *std.Build, runtime_app: std.Build.LazyPath) []c
     std.Io.Dir.accessAbsolute(b.graph.io, icon_path, .{}) catch |err| {
         std.debug.panic("unable to access Siv3D icon '{s}': {s}", .{ icon_path, @errorName(err) });
     };
-    buffer.print("100 ICON {s}\n", .{makeRcFileStringLiteral(b, "icon.ico")}) catch @panic("OOM");
+    buffer.appendSlice("DefineResource(100, ICON, icon.ico)\n") catch @panic("OOM");
 
     return buffer.toOwnedSlice() catch @panic("OOM");
 }
@@ -382,23 +383,17 @@ fn appendWindowsResourceDir(
     }) |entry| {
         if (entry.kind != .file) continue;
 
-        const relative_path = b.pathJoin(&.{ resource_dir, entry.path });
-        buffer.print("{s} FILE {s}\n", .{
-            makeRcNameStringLiteral(b, relative_path),
-            makeRcFileStringLiteral(b, relative_path),
+        const relative_path = normalizeRcPath(b, b.pathJoin(&.{ resource_dir, entry.path }));
+        // DefineResource stringizes the file path; quoting the identifier would become part of its name.
+        buffer.print("DefineResource({s}, FILE, {s})\n", .{
+            relative_path,
+            relative_path,
         }) catch @panic("OOM");
     }
 }
 
-fn makeRcNameStringLiteral(b: *std.Build, path: []const u8) []const u8 {
-    const normalized = std.mem.replaceOwned(u8, b.allocator, path, "\\", "/") catch @panic("OOM");
-    return b.fmt("\"{s}\"", .{normalized});
-}
-
-fn makeRcFileStringLiteral(b: *std.Build, path: []const u8) []const u8 {
-    const windows_path = std.mem.replaceOwned(u8, b.allocator, path, "/", "\\") catch @panic("OOM");
-    const escaped = std.mem.replaceOwned(u8, b.allocator, windows_path, "\\", "\\\\") catch @panic("OOM");
-    return b.fmt("\"{s}\"", .{escaped});
+fn normalizeRcPath(b: *std.Build, path: []const u8) []const u8 {
+    return std.mem.replaceOwned(u8, b.allocator, path, "\\", "/") catch @panic("OOM");
 }
 
 fn makeInfoPlist(b: *std.Build) []const u8 {
