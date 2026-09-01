@@ -21,13 +21,18 @@ const cxx_flags = [_][]const u8{
     "-std=c++23",
 };
 
-const windows_cxx_flags = [_][]const u8{
+const windows_release_cxx_flags = [_][]const u8{
     "-std=c++23",
     "-fms-compatibility-version=19.40",
     "-fms-runtime-lib=static",
-    // The Windows SDK release libraries are linked for every Zig optimize mode.
-    // Siv3D debug libraries require MSVC debug CRT discovery that Zig does not wire here yet.
     "-DNDEBUG",
+};
+
+const windows_debug_cxx_flags = [_][]const u8{
+    "-std=c++23",
+    "-fms-compatibility-version=19.40",
+    "-fms-runtime-lib=static_dbg",
+    "-D_DEBUG",
 };
 
 const macos_siv3d_libraries = [_][]const u8{
@@ -78,36 +83,63 @@ const macos_system_frameworks = [_][]const u8{
     "QuartzCore",
 };
 
-const WindowsLibraryGroup = struct {
-    directory: []const u8,
-    libraries: []const []const u8,
+const WindowsLibrary = struct {
+    release: []const u8,
+    debug: []const u8,
 };
 
-const windows_release_library_groups = [_]WindowsLibraryGroup{
-    .{ .directory = "", .libraries = &.{"Siv3D.lib"} },
-    .{ .directory = "boost", .libraries = &.{"libboost_filesystem-vc143-mt-s-x64-1_83.lib"} },
-    .{ .directory = "curl", .libraries = &.{"libcurl.lib"} },
-    .{ .directory = "freetype", .libraries = &.{"freetype.lib"} },
-    .{ .directory = "glew", .libraries = &.{"glew32s.lib"} },
-    .{ .directory = "harfbuzz", .libraries = &.{"harfbuzz.lib"} },
-    .{ .directory = "libgif", .libraries = &.{"libgif.lib"} },
-    .{ .directory = "libjpeg-turbo", .libraries = &.{"turbojpeg-static.lib"} },
-    .{ .directory = "libogg", .libraries = &.{"libogg.lib"} },
-    .{ .directory = "libpng", .libraries = &.{"libpng16.lib"} },
-    .{ .directory = "libtiff", .libraries = &.{"tiff.lib"} },
-    .{ .directory = "libvorbis", .libraries = &.{ "libvorbis_static.lib", "libvorbisfile_static.lib" } },
-    .{ .directory = "libwebp", .libraries = &.{"libwebp.lib"} },
-    .{ .directory = "Oniguruma", .libraries = &.{"Oniguruma.lib"} },
-    .{ .directory = "opencv", .libraries = &.{
-        "opencv_core451.lib",
-        "opencv_imgcodecs451.lib",
-        "opencv_imgproc451.lib",
-        "opencv_objdetect451.lib",
-        "opencv_photo451.lib",
-        "opencv_videoio451.lib",
+const WindowsLibraryGroup = struct {
+    directory: []const u8,
+    libraries: []const WindowsLibrary,
+};
+
+const windows_library_groups = [_]WindowsLibraryGroup{
+    .{ .directory = "", .libraries = &.{.{ .release = "Siv3D.lib", .debug = "Siv3D_d.lib" }} },
+    .{ .directory = "boost", .libraries = &.{.{
+        .release = "libboost_filesystem-vc143-mt-s-x64-1_83.lib",
+        .debug = "libboost_filesystem-vc143-mt-sgd-x64-1_83.lib",
+    }} },
+    .{ .directory = "curl", .libraries = &.{.{ .release = "libcurl.lib", .debug = "libcurl-d.lib" }} },
+    .{ .directory = "freetype", .libraries = &.{.{ .release = "freetype.lib", .debug = "freetyped.lib" }} },
+    .{ .directory = "glew", .libraries = &.{.{ .release = "glew32s.lib", .debug = "glew32sd.lib" }} },
+    .{ .directory = "harfbuzz", .libraries = &.{.{ .release = "harfbuzz.lib", .debug = "harfbuzz_d.lib" }} },
+    .{ .directory = "libgif", .libraries = &.{.{ .release = "libgif.lib", .debug = "libgif_d.lib" }} },
+    .{ .directory = "libjpeg-turbo", .libraries = &.{.{
+        .release = "turbojpeg-static.lib",
+        .debug = "turbojpeg-static_d.lib",
+    }} },
+    .{ .directory = "libogg", .libraries = &.{.{ .release = "libogg.lib", .debug = "libogg_d.lib" }} },
+    .{ .directory = "libpng", .libraries = &.{.{ .release = "libpng16.lib", .debug = "libpng16_d.lib" }} },
+    .{ .directory = "libtiff", .libraries = &.{.{ .release = "tiff.lib", .debug = "tiffd.lib" }} },
+    .{ .directory = "libvorbis", .libraries = &.{
+        .{ .release = "libvorbis_static.lib", .debug = "libvorbis_static_d.lib" },
+        .{ .release = "libvorbisfile_static.lib", .debug = "libvorbisfile_static_d.lib" },
     } },
-    .{ .directory = "opus", .libraries = &.{ "opus.lib", "opusfile.lib" } },
-    .{ .directory = "zlib", .libraries = &.{"zlib.lib"} },
+    .{ .directory = "libwebp", .libraries = &.{.{ .release = "libwebp.lib", .debug = "libwebp_debug.lib" }} },
+    .{ .directory = "Oniguruma", .libraries = &.{.{ .release = "Oniguruma.lib", .debug = "Oniguruma_d.lib" }} },
+    .{ .directory = "opencv", .libraries = &.{
+        .{ .release = "opencv_core451.lib", .debug = "opencv_core451d.lib" },
+        .{ .release = "opencv_imgcodecs451.lib", .debug = "opencv_imgcodecs451d.lib" },
+        .{ .release = "opencv_imgproc451.lib", .debug = "opencv_imgproc451d.lib" },
+        .{ .release = "opencv_objdetect451.lib", .debug = "opencv_objdetect451d.lib" },
+        .{ .release = "opencv_photo451.lib", .debug = "opencv_photo451d.lib" },
+        .{ .release = "opencv_videoio451.lib", .debug = "opencv_videoio451d.lib" },
+    } },
+    .{ .directory = "opus", .libraries = &.{
+        .{ .release = "opus.lib", .debug = "opus_d.lib" },
+        .{ .release = "opusfile.lib", .debug = "opusfile_d.lib" },
+    } },
+    .{ .directory = "zlib", .libraries = &.{.{ .release = "zlib.lib", .debug = "zlibd.lib" }} },
+};
+
+const windows_debug_msvc_libraries = [_][]const u8{
+    "libcpmtd.lib",
+    "libcmtd.lib",
+    "libvcruntimed.lib",
+    "libconcrtd.lib",
+    "oldnames.lib",
+    "legacy_stdio_definitions.lib",
+    "comsuppwd.lib",
 };
 
 const windows_resource_dirs = [_][]const u8{
@@ -122,20 +154,28 @@ const windows_system_libraries = [_][]const u8{
     "advapi32",
     "bcrypt",
     "comdlg32",
+    "crypt32",
     "d3d11",
     "d3dcompiler",
+    "dinput8",
+    "dwmapi",
     "dxgi",
+    "dxguid",
     "gdi32",
     "imm32",
+    "kernel32",
     "mf",
     "mfplat",
     "mfreadwrite",
     "mfuuid",
     "msimg32",
+    "ntdll",
     "ole32",
     "oleaut32",
     "opengl32",
     "rpcrt4",
+    "sapi",
+    "secur32",
     "setupapi",
     "shell32",
     "shlwapi",
@@ -180,6 +220,7 @@ fn defaultTarget() std.Target.Query {
 
 const CppModuleOptions = struct {
     flags: []const []const u8,
+    link_libc: bool = true,
     link_libcpp: ?bool,
 };
 
@@ -192,7 +233,7 @@ fn createCppModule(
     const root_module = b.createModule(.{
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
+        .link_libc = options.link_libc,
         .link_libcpp = options.link_libcpp,
     });
     root_module.addCSourceFiles(.{
@@ -286,26 +327,32 @@ fn buildWindows(
 
     const siv3d_sdk = b.lazyDependency("siv3d_windows_sdk", .{}) orelse return;
     const siv3d_runtime = b.lazyDependency("siv3d_windows_runtime", .{}) orelse return;
-    const lib_root = "lib/Windows";
     const runtime_root = "App";
+    const use_debug_libraries = optimize == .Debug;
 
     const root_module = createCppModule(b, target, optimize, .{
-        .flags = &windows_cxx_flags,
+        .flags = if (use_debug_libraries) &windows_debug_cxx_flags else &windows_release_cxx_flags,
+        .link_libc = !use_debug_libraries,
         // Use the MSVC standard library selected by the target instead of Zig's libc++.
         .link_libcpp = null,
     });
     root_module.addSystemIncludePath(siv3d_sdk.path("include"));
     root_module.addSystemIncludePath(siv3d_sdk.path("include/ThirdParty"));
 
-    for (windows_release_library_groups) |group| {
+    const lib_root = "lib/Windows";
+    for (windows_library_groups) |group| {
         const library_dir = if (group.directory.len == 0)
             lib_root
         else
             b.fmt("{s}/{s}", .{ lib_root, group.directory });
         root_module.addLibraryPath(siv3d_sdk.path(library_dir));
         for (group.libraries) |library| {
-            root_module.addObjectFile(siv3d_sdk.path(b.fmt("{s}/{s}", .{ library_dir, library })));
+            const library_name = if (use_debug_libraries) library.debug else library.release;
+            root_module.addObjectFile(siv3d_sdk.path(b.fmt("{s}/{s}", .{ library_dir, library_name })));
         }
+    }
+    if (use_debug_libraries) {
+        addWindowsDebugRuntime(b, root_module, resolved);
     }
     inline for (windows_system_libraries) |library| {
         root_module.linkSystemLibrary(library, .{});
@@ -327,6 +374,9 @@ fn buildWindows(
         .version = app_version,
     });
     executable.subsystem = .Windows;
+    if (use_debug_libraries) {
+        executable.entry = .{ .symbol_name = "WinMainCRTStartup" };
+    }
 
     const install_executable = b.addInstallArtifact(executable, .{});
     const install_dlls = b.addInstallDirectory(.{
@@ -343,6 +393,57 @@ fn buildWindows(
     run.step.dependOn(install_step);
     const run_step = b.step("run", "Build and run the executable");
     run_step.dependOn(&run.step);
+}
+
+fn addWindowsDebugRuntime(
+    b: *std.Build,
+    root_module: *std.Build.Module,
+    target: std.Target,
+) void {
+    if (builtin.os.tag != .windows) {
+        @panic("Windows Debug builds require MSVC and the Windows SDK on a Windows host");
+    }
+
+    var libc = std.zig.LibCInstallation.findNative(b.allocator, b.graph.io, .{
+        .target = &target,
+        .environ_map = &b.graph.environ_map,
+    }) catch |err| {
+        std.debug.panic("unable to locate the MSVC Debug runtime: {s}", .{@errorName(err)});
+    };
+    defer libc.deinit(b.allocator);
+
+    const msvc_include_dir = libc.sys_include_dir orelse
+        @panic("unable to locate the MSVC include directory");
+    const windows_sdk_ucrt_include_dir = libc.include_dir orelse
+        @panic("unable to locate the Windows SDK UCRT include directory");
+    const windows_sdk_include_root = std.fs.path.dirname(windows_sdk_ucrt_include_dir) orelse
+        @panic("invalid Windows SDK include directory");
+    const msvc_lib_dir = libc.msvc_lib_dir orelse
+        @panic("unable to locate the MSVC library directory");
+    const windows_sdk_ucrt_lib_dir = libc.crt_dir orelse
+        @panic("unable to locate the Windows SDK UCRT library directory");
+    const windows_sdk_um_lib_dir = libc.kernel32_lib_dir orelse
+        @panic("unable to locate the Windows SDK UM library directory");
+
+    root_module.addSystemIncludePath(.{ .cwd_relative = msvc_include_dir });
+    root_module.addSystemIncludePath(.{ .cwd_relative = windows_sdk_ucrt_include_dir });
+    inline for (&.{ "shared", "um", "winrt", "cppwinrt" }) |directory| {
+        root_module.addSystemIncludePath(.{
+            .cwd_relative = b.pathJoin(&.{ windows_sdk_include_root, directory }),
+        });
+    }
+
+    root_module.addLibraryPath(.{ .cwd_relative = msvc_lib_dir });
+    root_module.addLibraryPath(.{ .cwd_relative = windows_sdk_ucrt_lib_dir });
+    root_module.addLibraryPath(.{ .cwd_relative = windows_sdk_um_lib_dir });
+    inline for (windows_debug_msvc_libraries) |library| {
+        root_module.addObjectFile(.{
+            .cwd_relative = b.pathJoin(&.{ msvc_lib_dir, library }),
+        });
+    }
+    root_module.addObjectFile(.{
+        .cwd_relative = b.pathJoin(&.{ windows_sdk_ucrt_lib_dir, "libucrtd.lib" }),
+    });
 }
 
 fn makeWindowsResourceScript(b: *std.Build, runtime_app: std.Build.LazyPath) []const u8 {

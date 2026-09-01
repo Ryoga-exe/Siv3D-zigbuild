@@ -57,4 +57,6 @@ links the prebuilt Siv3D libraries, generates the app metadata or Windows resour
 a runnable app. Platform SDK dependencies are marked lazy so unrelated SDK archives are not fetched
 when building for a different platform.
 
-Windows currently links the release Siv3D SDK libraries for every Zig optimization mode.
+Windows Debug builds link the Siv3D debug libraries and the statically linked MSVC Debug CRT.
+They must run on a Windows host because the Debug CRT is discovered from the local MSVC
+installation. The other optimization modes use the Siv3D release libraries and static release CRT.
