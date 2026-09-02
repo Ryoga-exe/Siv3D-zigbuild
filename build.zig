@@ -84,52 +84,35 @@ const macos_system_frameworks = [_][]const u8{
 };
 
 const WindowsLibrary = struct {
-    release: []const u8,
-    debug: []const u8,
+    release_path: []const u8,
+    debug_path: []const u8,
 };
 
-const WindowsLibraryGroup = struct {
-    directory: []const u8,
-    libraries: []const WindowsLibrary,
-};
-
-const windows_library_groups = [_]WindowsLibraryGroup{
-    .{ .directory = "", .libraries = &.{.{ .release = "Siv3D.lib", .debug = "Siv3D_d.lib" }} },
-    .{ .directory = "boost", .libraries = &.{.{
-        .release = "libboost_filesystem-vc143-mt-s-x64-1_83.lib",
-        .debug = "libboost_filesystem-vc143-mt-sgd-x64-1_83.lib",
-    }} },
-    .{ .directory = "curl", .libraries = &.{.{ .release = "libcurl.lib", .debug = "libcurl-d.lib" }} },
-    .{ .directory = "freetype", .libraries = &.{.{ .release = "freetype.lib", .debug = "freetyped.lib" }} },
-    .{ .directory = "glew", .libraries = &.{.{ .release = "glew32s.lib", .debug = "glew32sd.lib" }} },
-    .{ .directory = "harfbuzz", .libraries = &.{.{ .release = "harfbuzz.lib", .debug = "harfbuzz_d.lib" }} },
-    .{ .directory = "libgif", .libraries = &.{.{ .release = "libgif.lib", .debug = "libgif_d.lib" }} },
-    .{ .directory = "libjpeg-turbo", .libraries = &.{.{
-        .release = "turbojpeg-static.lib",
-        .debug = "turbojpeg-static_d.lib",
-    }} },
-    .{ .directory = "libogg", .libraries = &.{.{ .release = "libogg.lib", .debug = "libogg_d.lib" }} },
-    .{ .directory = "libpng", .libraries = &.{.{ .release = "libpng16.lib", .debug = "libpng16_d.lib" }} },
-    .{ .directory = "libtiff", .libraries = &.{.{ .release = "tiff.lib", .debug = "tiffd.lib" }} },
-    .{ .directory = "libvorbis", .libraries = &.{
-        .{ .release = "libvorbis_static.lib", .debug = "libvorbis_static_d.lib" },
-        .{ .release = "libvorbisfile_static.lib", .debug = "libvorbisfile_static_d.lib" },
-    } },
-    .{ .directory = "libwebp", .libraries = &.{.{ .release = "libwebp.lib", .debug = "libwebp_debug.lib" }} },
-    .{ .directory = "Oniguruma", .libraries = &.{.{ .release = "Oniguruma.lib", .debug = "Oniguruma_d.lib" }} },
-    .{ .directory = "opencv", .libraries = &.{
-        .{ .release = "opencv_core451.lib", .debug = "opencv_core451d.lib" },
-        .{ .release = "opencv_imgcodecs451.lib", .debug = "opencv_imgcodecs451d.lib" },
-        .{ .release = "opencv_imgproc451.lib", .debug = "opencv_imgproc451d.lib" },
-        .{ .release = "opencv_objdetect451.lib", .debug = "opencv_objdetect451d.lib" },
-        .{ .release = "opencv_photo451.lib", .debug = "opencv_photo451d.lib" },
-        .{ .release = "opencv_videoio451.lib", .debug = "opencv_videoio451d.lib" },
-    } },
-    .{ .directory = "opus", .libraries = &.{
-        .{ .release = "opus.lib", .debug = "opus_d.lib" },
-        .{ .release = "opusfile.lib", .debug = "opusfile_d.lib" },
-    } },
-    .{ .directory = "zlib", .libraries = &.{.{ .release = "zlib.lib", .debug = "zlibd.lib" }} },
+const windows_libraries = [_]WindowsLibrary{
+    .{ .release_path = "lib/Windows/Siv3D.lib", .debug_path = "lib/Windows/Siv3D_d.lib" },
+    .{ .release_path = "lib/Windows/boost/libboost_filesystem-vc143-mt-s-x64-1_83.lib", .debug_path = "lib/Windows/boost/libboost_filesystem-vc143-mt-sgd-x64-1_83.lib" },
+    .{ .release_path = "lib/Windows/curl/libcurl.lib", .debug_path = "lib/Windows/curl/libcurl-d.lib" },
+    .{ .release_path = "lib/Windows/freetype/freetype.lib", .debug_path = "lib/Windows/freetype/freetyped.lib" },
+    .{ .release_path = "lib/Windows/glew/glew32s.lib", .debug_path = "lib/Windows/glew/glew32sd.lib" },
+    .{ .release_path = "lib/Windows/harfbuzz/harfbuzz.lib", .debug_path = "lib/Windows/harfbuzz/harfbuzz_d.lib" },
+    .{ .release_path = "lib/Windows/libgif/libgif.lib", .debug_path = "lib/Windows/libgif/libgif_d.lib" },
+    .{ .release_path = "lib/Windows/libjpeg-turbo/turbojpeg-static.lib", .debug_path = "lib/Windows/libjpeg-turbo/turbojpeg-static_d.lib" },
+    .{ .release_path = "lib/Windows/libogg/libogg.lib", .debug_path = "lib/Windows/libogg/libogg_d.lib" },
+    .{ .release_path = "lib/Windows/libpng/libpng16.lib", .debug_path = "lib/Windows/libpng/libpng16_d.lib" },
+    .{ .release_path = "lib/Windows/libtiff/tiff.lib", .debug_path = "lib/Windows/libtiff/tiffd.lib" },
+    .{ .release_path = "lib/Windows/libvorbis/libvorbis_static.lib", .debug_path = "lib/Windows/libvorbis/libvorbis_static_d.lib" },
+    .{ .release_path = "lib/Windows/libvorbis/libvorbisfile_static.lib", .debug_path = "lib/Windows/libvorbis/libvorbisfile_static_d.lib" },
+    .{ .release_path = "lib/Windows/libwebp/libwebp.lib", .debug_path = "lib/Windows/libwebp/libwebp_debug.lib" },
+    .{ .release_path = "lib/Windows/Oniguruma/Oniguruma.lib", .debug_path = "lib/Windows/Oniguruma/Oniguruma_d.lib" },
+    .{ .release_path = "lib/Windows/opencv/opencv_core451.lib", .debug_path = "lib/Windows/opencv/opencv_core451d.lib" },
+    .{ .release_path = "lib/Windows/opencv/opencv_imgcodecs451.lib", .debug_path = "lib/Windows/opencv/opencv_imgcodecs451d.lib" },
+    .{ .release_path = "lib/Windows/opencv/opencv_imgproc451.lib", .debug_path = "lib/Windows/opencv/opencv_imgproc451d.lib" },
+    .{ .release_path = "lib/Windows/opencv/opencv_objdetect451.lib", .debug_path = "lib/Windows/opencv/opencv_objdetect451d.lib" },
+    .{ .release_path = "lib/Windows/opencv/opencv_photo451.lib", .debug_path = "lib/Windows/opencv/opencv_photo451d.lib" },
+    .{ .release_path = "lib/Windows/opencv/opencv_videoio451.lib", .debug_path = "lib/Windows/opencv/opencv_videoio451d.lib" },
+    .{ .release_path = "lib/Windows/opus/opus.lib", .debug_path = "lib/Windows/opus/opus_d.lib" },
+    .{ .release_path = "lib/Windows/opus/opusfile.lib", .debug_path = "lib/Windows/opus/opusfile_d.lib" },
+    .{ .release_path = "lib/Windows/zlib/zlib.lib", .debug_path = "lib/Windows/zlib/zlibd.lib" },
 };
 
 const windows_debug_msvc_libraries = [_][]const u8{
@@ -194,27 +177,26 @@ pub fn build(b: *std.Build) void {
     });
     const optimize = b.standardOptimizeOption(.{});
 
-    const resolved = target.result;
-    switch (resolved.os.tag) {
-        .macos => buildMacOS(b, target, optimize, resolved),
-        .windows => buildWindows(b, target, optimize, resolved),
+    switch (target.result.os.tag) {
+        .macos => buildMacOS(b, target, optimize),
+        .windows => buildWindows(b, target, optimize),
         else => @panic("this PoC currently supports only x86_64-macos and x86_64-windows-msvc"),
     }
 }
 
 fn defaultTarget() std.Target.Query {
-    if (builtin.os.tag == .windows) {
-        return .{
+    return switch (builtin.os.tag) {
+        .windows => .{
             .cpu_arch = .x86_64,
             .os_tag = .windows,
             .abi = .msvc,
-        };
-    }
-
-    return .{
-        .cpu_arch = .x86_64,
-        .os_tag = .macos,
-        .os_version_min = .{ .semver = minimum_macos_version },
+        },
+        .macos => .{
+            .cpu_arch = .x86_64,
+            .os_tag = .macos,
+            .os_version_min = .{ .semver = minimum_macos_version },
+        },
+        else => .{},
     };
 }
 
@@ -248,8 +230,8 @@ fn buildMacOS(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
-    resolved: std.Target,
 ) void {
+    const resolved = target.result;
     if (resolved.cpu.arch != .x86_64) {
         @panic("macOS support currently requires x86_64-macos");
     }
@@ -272,7 +254,7 @@ fn buildMacOS(
     root_module.addFrameworkPath(macos_sdk_root.path(b, "System/Library/Frameworks"));
 
     inline for (macos_siv3d_libraries) |library| {
-        root_module.addObjectFile(siv3d_sdk.path(b.fmt("lib/macOS/{s}", .{library})));
+        root_module.addObjectFile(siv3d_sdk.path("lib/macOS/" ++ library));
     }
     inline for (macos_system_libraries) |library| {
         root_module.linkSystemLibrary(library, .{});
@@ -319,8 +301,8 @@ fn buildWindows(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
-    resolved: std.Target,
 ) void {
+    const resolved = target.result;
     if (resolved.cpu.arch != .x86_64 or resolved.abi != .msvc) {
         @panic("Windows support currently requires x86_64-windows-msvc");
     }
@@ -339,17 +321,9 @@ fn buildWindows(
     root_module.addSystemIncludePath(siv3d_sdk.path("include"));
     root_module.addSystemIncludePath(siv3d_sdk.path("include/ThirdParty"));
 
-    const lib_root = "lib/Windows";
-    for (windows_library_groups) |group| {
-        const library_dir = if (group.directory.len == 0)
-            lib_root
-        else
-            b.fmt("{s}/{s}", .{ lib_root, group.directory });
-        root_module.addLibraryPath(siv3d_sdk.path(library_dir));
-        for (group.libraries) |library| {
-            const library_name = if (use_debug_libraries) library.debug else library.release;
-            root_module.addObjectFile(siv3d_sdk.path(b.fmt("{s}/{s}", .{ library_dir, library_name })));
-        }
+    for (windows_libraries) |library| {
+        const library_path = if (use_debug_libraries) library.debug_path else library.release_path;
+        root_module.addObjectFile(siv3d_sdk.path(library_path));
     }
     if (use_debug_libraries) {
         addWindowsDebugRuntime(b, root_module, resolved);
@@ -380,7 +354,7 @@ fn buildWindows(
 
     const install_executable = b.addInstallArtifact(executable, .{});
     const install_dlls = b.addInstallDirectory(.{
-        .source_dir = siv3d_runtime.path(b.fmt("{s}/dll", .{runtime_root})),
+        .source_dir = siv3d_runtime.path(runtime_root ++ "/dll"),
         .install_dir = .bin,
         .install_subdir = "dll",
     });
