@@ -21,6 +21,44 @@ const cxx_flags = [_][]const u8{
     "-std=c++23",
 };
 
+const linux_pkg_config_libraries = [_][]const u8{
+    "alsa",
+    "libavcodec",
+    "libavformat",
+    "libavutil",
+    "libcurl",
+    "freetype2",
+    "gl",
+    "glib-2.0",
+    "gtk+-3.0",
+    "harfbuzz",
+    "libmpg123",
+    "ogg",
+    "opencv4",
+    "opus",
+    "opusfile",
+    "libpng",
+    "soundtouch",
+    "libswresample",
+    "libtiff-4",
+    "libturbojpeg",
+    "uuid",
+    "vorbis",
+    "vorbisenc",
+    "vorbisfile",
+    "libwebp",
+    "x11",
+    "glu",
+    "xft",
+    "zlib",
+};
+
+const linux_system_libraries = [_][]const u8{
+    "dl",
+    "gif",
+    "pthread",
+};
+
 const windows_release_cxx_flags = [_][]const u8{
     "-std=c++23",
     "-fms-compatibility-version=19.40",
@@ -179,8 +217,9 @@ pub fn build(b: *std.Build) void {
 
     switch (target.result.os.tag) {
         .macos => buildMacOS(b, target, optimize),
+        .linux => buildLinux(b, target, optimize),
         .windows => buildWindows(b, target, optimize),
-        else => @panic("this PoC currently supports only x86_64-macos and x86_64-windows-msvc"),
+        else => @panic("this PoC currently supports only x86_64-macos, x86_64-linux-gnu, and x86_64-windows-msvc"),
     }
 }
 
@@ -196,6 +235,9 @@ fn defaultTarget() std.Target.Query {
             .os_tag = .macos,
             .os_version_min = .{ .semver = minimum_macos_version },
         },
+        // Linux uses the native target because its libc, libstdc++, and pkg-config
+        // dependencies all come from the host system.
+        .linux => .{},
         else => .{},
     };
 }
@@ -295,6 +337,134 @@ fn buildMacOS(
     open.step.dependOn(install_step);
     const run_step = b.step("run", "Build and open the app bundle");
     run_step.dependOn(&open.step);
+}
+
+fn buildLinux(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) void {
+    const resolved = target.result;
+    if (resolved.cpu.arch != .x86_64 or resolved.abi != .gnu) {
+        @panic("Linux support currently requires x86_64-linux-gnu");
+    }
+    if (builtin.os.tag != .linux or builtin.cpu.arch != .x86_64) {
+        @panic("Linux builds currently require an x86_64 Linux host");
+    }
+
+    const siv3d_sdk = b.lazyDependency("siv3d_linux", .{}) orelse return;
+    const root_module = createCppModule(b, target, optimize, .{
+        .flags = &cxx_flags,
+        .link_libcpp = false,
+    });
+    root_module.addSystemIncludePath(siv3d_sdk.path("include/Siv3D"));
+    root_module.addSystemIncludePath(siv3d_sdk.path("include/Siv3D/ThirdParty"));
+    root_module.addObjectFile(siv3d_sdk.path("lib/libSiv3D.a"));
+
+    addLinuxSystemCxxRuntime(b, root_module);
+    inline for (linux_pkg_config_libraries) |library| {
+        root_module.linkSystemLibrary(library, .{ .use_pkg_config = .force });
+    }
+    inline for (linux_system_libraries) |library| {
+        root_module.linkSystemLibrary(library, .{ .use_pkg_config = .no });
+    }
+
+    const executable = b.addExecutable(.{
+        .name = app_name,
+        .root_module = root_module,
+        .version = app_version,
+    });
+    // GCC installations may expose libstdc++.so as a linker script.
+    executable.allow_so_scripts = true;
+
+    const install_executable = b.addInstallArtifact(executable, .{});
+    const install_engine = b.addInstallDirectory(.{
+        .source_dir = siv3d_sdk.path("share/Siv3D/resources/engine"),
+        .install_dir = .bin,
+        .install_subdir = "resources/engine",
+    });
+
+    const install_step = b.getInstallStep();
+    install_step.dependOn(&install_executable.step);
+    install_step.dependOn(&install_engine.step);
+
+    const run = b.addSystemCommand(&.{b.getInstallPath(.bin, app_name)});
+    run.step.dependOn(install_step);
+    const run_step = b.step("run", "Build and run the executable");
+    run_step.dependOn(&run.step);
+}
+
+fn addLinuxSystemCxxRuntime(b: *std.Build, root_module: *std.Build.Module) void {
+    const compiler = if (b.graph.environ_map.get("CXX")) |cxx|
+        b.findProgram(&.{cxx}, &.{}) catch
+            std.debug.panic("unable to find the C++ compiler specified by CXX: '{s}'", .{cxx})
+    else
+        b.findProgram(&.{ "c++", "g++" }, &.{}) catch
+            @panic("unable to find a system C++ compiler; install GCC or set CXX");
+
+    var probe_environment = b.graph.environ_map.clone(b.allocator) catch @panic("OOM");
+    defer probe_environment.deinit();
+    probe_environment.put("LC_ALL", "C") catch @panic("OOM");
+
+    const include_probe = std.process.run(b.allocator, b.graph.io, .{
+        .argv = &.{ compiler, "-E", "-x", "c++", "-v", "/dev/null" },
+        .environ_map = &probe_environment,
+    }) catch |err| {
+        std.debug.panic("unable to query system C++ include paths: {s}", .{@errorName(err)});
+    };
+    defer b.allocator.free(include_probe.stdout);
+    defer b.allocator.free(include_probe.stderr);
+    requireSuccessfulCompilerProbe(compiler, include_probe.term, include_probe.stderr);
+
+    var found_cxx_include = false;
+    var in_include_list = false;
+    var lines = std.mem.splitScalar(u8, include_probe.stderr, '\n');
+    while (lines.next()) |raw_line| {
+        const line = std.mem.trim(u8, raw_line, " \t\r");
+        if (std.mem.eql(u8, line, "#include <...> search starts here:")) {
+            in_include_list = true;
+            continue;
+        }
+        if (std.mem.eql(u8, line, "End of search list.")) break;
+        if (!in_include_list or std.mem.indexOf(u8, line, "/c++/") == null) continue;
+
+        if (!std.fs.path.isAbsolute(line)) {
+            std.debug.panic("system C++ compiler returned a non-absolute include path: '{s}'", .{line});
+        }
+        root_module.addSystemIncludePath(.{ .cwd_relative = line });
+        found_cxx_include = true;
+    }
+    if (!found_cxx_include) {
+        std.debug.panic("unable to find libstdc++ include paths reported by '{s}'", .{compiler});
+    }
+
+    const library_probe = std.process.run(b.allocator, b.graph.io, .{
+        .argv = &.{ compiler, "-print-file-name=libstdc++.so" },
+        .environ_map = &probe_environment,
+    }) catch |err| {
+        std.debug.panic("unable to query the system libstdc++ library: {s}", .{@errorName(err)});
+    };
+    defer b.allocator.free(library_probe.stdout);
+    defer b.allocator.free(library_probe.stderr);
+    requireSuccessfulCompilerProbe(compiler, library_probe.term, library_probe.stderr);
+
+    const libstdcxx_path = std.mem.trim(u8, library_probe.stdout, " \t\r\n");
+    if (!std.fs.path.isAbsolute(libstdcxx_path)) {
+        std.debug.panic("'{s}' did not report an absolute path for libstdc++.so", .{compiler});
+    }
+    root_module.addObjectFile(.{ .cwd_relative = libstdcxx_path });
+}
+
+fn requireSuccessfulCompilerProbe(
+    compiler: []const u8,
+    term: std.process.Child.Term,
+    stderr: []const u8,
+) void {
+    switch (term) {
+        .exited => |code| if (code == 0) return,
+        else => {},
+    }
+    std.debug.panic("system C++ compiler probe failed for '{s}':\n{s}", .{ compiler, stderr });
 }
 
 fn buildWindows(
