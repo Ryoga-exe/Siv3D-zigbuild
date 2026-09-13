@@ -34,12 +34,12 @@ const linux_pkg_config_libraries = [_][]const u8{
     "harfbuzz",
     "libmpg123",
     "ogg",
-    "opencv4",
     "opus",
     "opusfile",
     "libpng",
     "soundtouch",
     "libswresample",
+    "libswscale",
     "libtiff-4",
     "libturbojpeg",
     "uuid",
@@ -56,7 +56,17 @@ const linux_pkg_config_libraries = [_][]const u8{
 const linux_system_libraries = [_][]const u8{
     "dl",
     "gif",
+    "jpeg",
+    "m",
     "pthread",
+    "rt",
+};
+
+const linux_sdk_libraries = [_][]const u8{
+    "lib/libSiv3D.a",
+    "lib/libopencv_world.a",
+    "lib/opencv4/3rdparty/libade.a",
+    "lib/opencv4/3rdparty/libquirc.a",
 };
 
 const windows_release_cxx_flags = [_][]const u8{
@@ -359,7 +369,10 @@ fn buildLinux(
     });
     root_module.addSystemIncludePath(siv3d_sdk.path("include/Siv3D"));
     root_module.addSystemIncludePath(siv3d_sdk.path("include/Siv3D/ThirdParty"));
-    root_module.addObjectFile(siv3d_sdk.path("lib/libSiv3D.a"));
+    root_module.addSystemIncludePath(siv3d_sdk.path("include/opencv4"));
+    inline for (linux_sdk_libraries) |library| {
+        root_module.addObjectFile(siv3d_sdk.path(library));
+    }
 
     addLinuxSystemCxxRuntime(b, root_module);
     inline for (linux_pkg_config_libraries) |library| {

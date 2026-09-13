@@ -18,7 +18,8 @@ The prebuilt Linux SDK is built and tested on Ubuntu 22.04 with GCC 11. Other gl
 distributions may work when the equivalent system dependencies are installed. See the
 [Siv3D Linux Builds](https://github.com/Ryoga-exe/Siv3D-linux-builds#system-dependencies-on-ubuntu)
 documentation for the Ubuntu package list. musl-based distributions such as Alpine Linux are not
-currently supported. Set `CXX` when the system C++ compiler is not available as `c++` or `g++`.
+currently supported. OpenCV is pinned and bundled in the Linux SDK, so a system OpenCV package is
+not required. Set `CXX` when the system C++ compiler is not available as `c++` or `g++`.
 
 ## Build
 
