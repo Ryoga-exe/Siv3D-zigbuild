@@ -444,11 +444,13 @@ fn addLinuxSystemCxxRuntime(b: *std.Build, root_module: *std.Build.Module) void 
         if (!std.fs.path.isAbsolute(line)) {
             std.debug.panic("system C++ compiler returned a non-absolute include path: '{s}'", .{line});
         }
-        // Preserve the compiler's complete search order. libstdc++ headers use
-        // #include_next to reach system C headers such as math.h.
-        root_module.addSystemIncludePath(.{ .cwd_relative = line });
         if (std.mem.indexOf(u8, line, "/c++/") != null) {
+            root_module.addSystemIncludePath(.{ .cwd_relative = line });
             found_cxx_include = true;
+        } else {
+            // libstdc++ headers use #include_next to reach system C headers
+            // such as math.h, so these paths must follow the C++ headers.
+            root_module.addAfterIncludePath(.{ .cwd_relative = line });
         }
     }
     if (!found_cxx_include) {
