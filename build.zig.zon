@@ -10,8 +10,8 @@
             .lazy = true,
         },
         .siv3d_linux = .{
-            .url = "https://github.com/Ryoga-exe/Siv3D-linux-builds/releases/download/v0.6.16-r2/siv3d-v0.6.16-linux-gnu-x86_64.tar.gz",
-            .hash = "N-V-__8AAMh-bAhe6YuMvSPf1Xkq87Et5kBMAwGkRdPuwwS6",
+            .url = "https://github.com/Ryoga-exe/Siv3D-linux-builds/releases/download/v0.6.16-r3/siv3d-v0.6.16-linux-gnu-x86_64.tar.gz",
+            .hash = "N-V-__8AABuEVQrs_Xl1kw_uSqldvwTCKFtAtKOLaGOhH93v",
             .lazy = true,
         },
         .siv3d_windows_sdk = .{

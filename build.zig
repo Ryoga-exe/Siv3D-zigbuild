@@ -23,9 +23,6 @@ const cxx_flags = [_][]const u8{
 
 const linux_pkg_config_libraries = [_][]const u8{
     "alsa",
-    "libavcodec",
-    "libavformat",
-    "libavutil",
     "libcurl",
     "freetype2",
     "gl",
@@ -37,9 +34,6 @@ const linux_pkg_config_libraries = [_][]const u8{
     "opus",
     "opusfile",
     "libpng",
-    "soundtouch",
-    "libswresample",
-    "libswscale",
     "libtiff-4",
     "libturbojpeg",
     "uuid",
@@ -62,11 +56,25 @@ const linux_system_libraries = [_][]const u8{
     "rt",
 };
 
-const linux_sdk_libraries = [_][]const u8{
+const linux_sdk_static_libraries = [_][]const u8{
     "lib/libSiv3D.a",
     "lib/libopencv_world.a",
     "lib/opencv4/3rdparty/libade.a",
     "lib/opencv4/3rdparty/libquirc.a",
+};
+
+const LinuxSdkSharedLibrary = struct {
+    path: []const u8,
+    soname: []const u8,
+};
+
+const linux_sdk_shared_libraries = [_]LinuxSdkSharedLibrary{
+    .{ .path = "lib/libSoundTouch.so.2.3.1", .soname = "libSoundTouch.so.2" },
+    .{ .path = "lib/libavcodec.so.58.134.100", .soname = "libavcodec.so.58" },
+    .{ .path = "lib/libavformat.so.58.76.100", .soname = "libavformat.so.58" },
+    .{ .path = "lib/libavutil.so.56.70.100", .soname = "libavutil.so.56" },
+    .{ .path = "lib/libswresample.so.3.9.100", .soname = "libswresample.so.3" },
+    .{ .path = "lib/libswscale.so.5.9.100", .soname = "libswscale.so.5" },
 };
 
 const windows_release_cxx_flags = [_][]const u8{
@@ -370,9 +378,13 @@ fn buildLinux(
     root_module.addSystemIncludePath(siv3d_sdk.path("include/Siv3D"));
     root_module.addSystemIncludePath(siv3d_sdk.path("include/Siv3D/ThirdParty"));
     root_module.addSystemIncludePath(siv3d_sdk.path("include/opencv4"));
-    inline for (linux_sdk_libraries) |library| {
+    inline for (linux_sdk_static_libraries) |library| {
         root_module.addObjectFile(siv3d_sdk.path(library));
     }
+    inline for (linux_sdk_shared_libraries) |library| {
+        root_module.addObjectFile(siv3d_sdk.path(library.path));
+    }
+    root_module.addRPathSpecial("$ORIGIN");
 
     addLinuxSystemCxxRuntime(b, root_module);
     inline for (linux_pkg_config_libraries) |library| {
@@ -400,6 +412,14 @@ fn buildLinux(
     const install_step = b.getInstallStep();
     install_step.dependOn(&install_executable.step);
     install_step.dependOn(&install_engine.step);
+    inline for (linux_sdk_shared_libraries) |library| {
+        const install_library = b.addInstallFileWithDir(
+            siv3d_sdk.path(library.path),
+            .bin,
+            library.soname,
+        );
+        install_step.dependOn(&install_library.step);
+    }
 
     const run = b.addSystemCommand(&.{b.getInstallPath(.bin, app_name)});
     run.step.dependOn(install_step);
@@ -453,21 +473,30 @@ fn addLinuxSystemCxxRuntime(b: *std.Build, root_module: *std.Build.Module) void 
         std.debug.panic("unable to find libstdc++ include paths reported by '{s}'", .{compiler});
     }
 
-    const library_probe = std.process.run(b.allocator, b.graph.io, .{
-        .argv = &.{ compiler, "-print-file-name=libstdc++.so" },
-        .environ_map = &probe_environment,
-    }) catch |err| {
-        std.debug.panic("unable to query the system libstdc++ library: {s}", .{@errorName(err)});
-    };
-    defer b.allocator.free(library_probe.stdout);
-    defer b.allocator.free(library_probe.stderr);
-    requireSuccessfulCompilerProbe(compiler, library_probe.term, library_probe.stderr);
+    inline for (&.{ "libstdc++.so", "libgcc_s.so" }) |library_name| {
+        const print_file_name_arg = b.fmt("-print-file-name={s}", .{library_name});
+        const library_probe = std.process.run(b.allocator, b.graph.io, .{
+            .argv = &.{ compiler, print_file_name_arg },
+            .environ_map = &probe_environment,
+        }) catch |err| {
+            std.debug.panic("unable to query the system {s} library: {s}", .{
+                library_name,
+                @errorName(err),
+            });
+        };
+        defer b.allocator.free(library_probe.stdout);
+        defer b.allocator.free(library_probe.stderr);
+        requireSuccessfulCompilerProbe(compiler, library_probe.term, library_probe.stderr);
 
-    const libstdcxx_path = std.mem.trim(u8, library_probe.stdout, " \t\r\n");
-    if (!std.fs.path.isAbsolute(libstdcxx_path)) {
-        std.debug.panic("'{s}' did not report an absolute path for libstdc++.so", .{compiler});
+        const library_path = std.mem.trim(u8, library_probe.stdout, " \t\r\n");
+        if (!std.fs.path.isAbsolute(library_path)) {
+            std.debug.panic("'{s}' did not report an absolute path for {s}", .{
+                compiler,
+                library_name,
+            });
+        }
+        root_module.addObjectFile(.{ .cwd_relative = library_path });
     }
-    root_module.addObjectFile(.{ .cwd_relative = libstdcxx_path });
 }
 
 fn requireSuccessfulCompilerProbe(

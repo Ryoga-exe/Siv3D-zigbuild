@@ -18,8 +18,9 @@ The prebuilt Linux SDK is built and tested on Ubuntu 22.04 with GCC 11. Other gl
 distributions may work when the equivalent system dependencies are installed. See the
 [Siv3D Linux Builds](https://github.com/Ryoga-exe/Siv3D-linux-builds#system-dependencies-on-ubuntu)
 documentation for the Ubuntu package list. musl-based distributions such as Alpine Linux are not
-currently supported. OpenCV is pinned and bundled in the Linux SDK, so a system OpenCV package is
-not required. Set `CXX` when the system C++ compiler is not available as `c++` or `g++`.
+currently supported. OpenCV, FFmpeg, and SoundTouch are pinned and bundled in the Linux SDK, so
+system packages for them are not required. Set `CXX` when the system C++ compiler is not available
+as `c++` or `g++`.
 
 ## Build
 
@@ -29,6 +30,8 @@ zig build
 
 On macOS, the app bundle is generated at `zig-out/Siv3DTest.app`.
 On Linux and Windows, the executable and runtime resources are generated under `zig-out/bin`.
+On Linux, the bundled FFmpeg and SoundTouch shared libraries are also copied to `zig-out/bin`, and
+the executable uses an `$ORIGIN` RUNPATH to load them from that directory.
 To build and run it:
 
 ```sh
