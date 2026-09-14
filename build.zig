@@ -473,7 +473,9 @@ fn addLinuxSystemCxxRuntime(b: *std.Build, root_module: *std.Build.Module) void 
         std.debug.panic("unable to find libstdc++ include paths reported by '{s}'", .{compiler});
     }
 
-    inline for (&.{ "libstdc++.so", "libgcc_s.so" }) |library_name| {
+    // libgcc_s.so is commonly a GNU linker script containing `-lgcc`.
+    // Request the versioned shared object so Zig receives the ELF file itself.
+    inline for (&.{ "libstdc++.so", "libgcc_s.so.1" }) |library_name| {
         const print_file_name_arg = b.fmt("-print-file-name={s}", .{library_name});
         const library_probe = std.process.run(b.allocator, b.graph.io, .{
             .argv = &.{ compiler, print_file_name_arg },
